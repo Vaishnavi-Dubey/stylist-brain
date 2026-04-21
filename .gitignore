@@ -1,0 +1,31 @@
+# The Stylist's Brain — wardrobe items and model weights are private
+wardrobe/
+output/
+models/
+chroma_store/
+stylist.db
+token.json
+credentials.json
+.env
+.venv/
+env/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.mypy_cache/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+
+# System
+.DS_Store
+Thumbs.db

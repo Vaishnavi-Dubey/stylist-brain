@@ -1,0 +1,31 @@
+# Core runtime
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-multipart==0.0.9      # file uploads
+httpx==0.27.0                 # Ollama + weather API calls
+
+# ML pipeline
+rembg==2.0.57                 # background removal (U2Net) — full-photo-first strategy
+ultralytics==8.2.0            # YOLOv8n — use ONLY the nano variant (yolov8n.pt)
+open_clip_torch==2.24.0       # CLIP ViT-B/32 — do NOT use ViT-L/14
+torch==2.3.0                  # CPU-only build on MacBook Air
+torchvision==0.18.0
+opencv-python-headless==4.9.0.80  # frame extraction — headless = no GUI deps
+Pillow==10.3.0
+
+# MobileSAM — install from source (not on PyPI):
+# pip install git+https://github.com/ChaoningZhang/MobileSAM.git
+# Then download weights:
+# wget -P models/ https://github.com/ChaoningZhang/MobileSAM/raw/master/weights/mobile_sam.pt
+
+# Vector DB
+chromadb==0.5.0
+
+# Calendar (optional — skip if not using Google Calendar)
+google-api-python-client==2.128.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+
+# Utilities
+python-dotenv==1.0.1          # load .env for OWM_API_KEY
+scikit-learn>=1.4.0           # K-means clustering for dominant color extraction

@@ -1,103 +1,63 @@
-# The Stylist's Brain
+# stylist-brain
 
-Context-aware wardrobe styling — 100% local, 100% free, runs on a MacBook Air.
+<div align="center">
+  [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT) [![Issues](https://img.shields.io/github/issues/Vaishnavi-Dubey/stylist-brain.svg?style=for-the-badge)](https://github.com/Vaishnavi-Dubey/stylist-brain/issues) [![Stars](https://img.shields.io/github/stars/Vaishnavi-Dubey/stylist-brain.svg?style=for-the-badge)](https://github.com/Vaishnavi-Dubey/stylist-brain/stargazers)
 
-## Stack
-| Layer | Tool |
-|---|---|
-| Garment detection | YOLOv8n (nano) |
-| Segmentation | MobileSAM |
-| Style embeddings | CLIP ViT-B/32 via open_clip |
-| Vector DB | ChromaDB (local) |
-| LLM | Ollama — llama3:8b or mistral:7b |
-| Backend | FastAPI + uvicorn |
-| Frontend | Plain HTML/JS |
-| Weather | OpenWeatherMap free tier |
-| Calendar | Google Calendar API (free OAuth) |
+  
+</div>
 
----
 
-## Quick Start
 
-### 1. Install dependencies
+## Overview
+
+This repository contains [brief description of what this project does].
+
+## Features
+
+- Feature 1
+- Feature 2
+- Feature 3
+
+## Installation
+
 ```bash
+npm install
+# or
+git clone https://github.com/Vaishnavi-Dubey/stylist-brain.git
 cd stylist-brain
-
-# Create a virtual environment
-python3.11 -m venv .venv && source .venv/bin/activate
-
-# Install Python packages
-pip install -r requirements.txt
-
-# Install MobileSAM (not on PyPI)
-pip install git+https://github.com/ChaoningZhang/MobileSAM.git
-
-# Download MobileSAM weights
-mkdir -p models
-curl -L -o models/mobile_sam.pt \
-  https://github.com/ChaoningZhang/MobileSAM/raw/master/weights/mobile_sam.pt
+npm install
 ```
 
-### 2. Install and start Ollama
+## Usage
+
 ```bash
-# Install Ollama (free, local)
-brew install ollama          # macOS
-
-# Pull a 7-8B model (do NOT use 13B or 70B — too heavy for MacBook Air)
-ollama pull llama3:8b        # recommended
-# or: ollama pull mistral:7b
-
-# Start Ollama server (runs in background)
-ollama serve
+npm start
 ```
 
-### 3. Configure environment
-```bash
-cp .env.example .env
-# Edit .env — add your free OpenWeatherMap API key
-# Sign up at https://openweathermap.org/api (no credit card)
-```
+## Development
 
-### 4. Run the backend
-```bash
-cd backend
-uvicorn main:app --reload --port 8000
-```
+### Prerequisites
+- Node.js 16+
+- npm or yarn
 
-### 5. Open the frontend
-Open `frontend/index.html` in your browser.
+### Getting Started
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Start development server: `npm run dev`
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+MIT License - see LICENSE file for details
+
+## Contact
+
+For questions or support, please open an issue on GitHub.
 
 ---
 
-## Environment Variables
-```
-OWM_API_KEY=your_free_openweathermap_key
-WEATHER_CITY=Mumbai
-```
-
----
-
-## RAM Budget (MacBook Air)
-| Model | RAM |
-|---|---|
-| YOLOv8n | ~80 MB |
-| MobileSAM | ~40 MB |
-| CLIP ViT-B/32 | ~340 MB |
-| Ollama llama3:8b (4-bit) | ~5.5 GB |
-| ChromaDB | disk-backed, minimal RAM |
-| **Total peak** | **~6.5 GB** |
-
-Models are lazy-loaded and unloaded after each pipeline run.  
-Never run YOLO, SAM, CLIP, and Ollama simultaneously.
-
----
-
-## Feature Roadmap
-- [x] Scaffold
-- [ ] Wardrobe intake pipeline
-- [ ] Vibe query engine
-- [ ] Rule of Three engine
-- [ ] Habit lock system
-- [ ] Gap analysis
-- [ ] Weather + calendar context
-- [ ] AR overlay (MediaPipe v2 — post-MVP)
+Last updated: 2026

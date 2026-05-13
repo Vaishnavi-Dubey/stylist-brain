@@ -1,843 +1,693 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Stylist's Brain — AI Wardrobe Assistant</title>
-  <meta name="description" content="AI-powered wardrobe styling — YOLOv8, CLIP, MobileSAM & Ollama analyze your clothes and recommend outfits. 100% local, 100% private." />
-  <meta property="og:title" content="The Stylist's Brain" />
-  <meta property="og:description" content="5 AI models analyze your closet. An LLM dresses you. All on your laptop." />
-  <meta property="og:type" content="website" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>The Stylist's Brain — Editorial Atelier</title>
+    
+    <!-- Typography: Cormorant Garamond (Editorial), Space Grotesk (UI Labels), DM Sans (Body) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet">
 
-    :root {
-      --bg:      #0a0a0b;
-      --surface: #141416;
-      --surface2:#1c1c20;
-      --border:  #28282e;
-      --accent:  #d4a843;
-      --accent2: #b08930;
-      --text:    #ebebeb;
-      --muted:   #787880;
-      --green:   #4caf6f;
-      --red:     #d06060;
-      --radius:  10px;
-      --font:    'DM Sans', system-ui, sans-serif;
-      --mono:    'JetBrains Mono', 'Menlo', monospace;
-    }
+    <!-- Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
 
-    body {
-      font-family: var(--font);
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 300px 1fr;
-      grid-template-rows: auto 1fr auto;
-      grid-template-areas: "header header" "sidebar main" "footer footer";
-    }
+    <style>
+        :root {
+            /* Palette: Dark Mode Editorial */
+            --bg-canvas:    #0E0D0B;  /* Deep Espresso */
+            --bg-surface:   #171613;  /* Cards/Panels */
+            --bg-elevated:  #1E1C19;  /* Hover Surfaces */
+            
+            --text-primary:   #F0EDE6;  /* Warm Linen */
+            --text-secondary: #8C8880;  /* Muted Warm Gray */
+            --text-accent:    #C9B99A;  /* Warm Gold */
+            
+            --border-default: rgba(240, 237, 230, 0.08);
+            --border-hover:   rgba(240, 237, 230, 0.18);
+            --accent-line:    #C9B99A;
+            
+            --font-serif: 'Cormorant Garamond', serif;
+            --font-sans:  'DM Sans', sans-serif;
+            --font-label: 'Space Grotesk', sans-serif;
+            
+            /* Easing: Non-negotiable silk/spring curves */
+            --ease-silk: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+            --ease-out: cubic-bezier(0.4, 0, 1, 1);
+        }
 
-    /* ── Header ── */
-    header {
-      grid-area: header;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1.2rem 2rem;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface);
-    }
-    header h1 { font-size: 1.4rem; color: var(--accent); letter-spacing: 0.06em; }
-    header p  { color: var(--muted); font-size: 0.78rem; margin-top: 0.2rem; }
-    #context-bar { display: flex; gap: 0.6rem; flex-wrap: wrap; }
-    .ctx-chip {
-      font-size: 0.74rem; color: var(--muted);
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 20px; padding: 0.2rem 0.7rem;
-    }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: var(--font-sans);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
 
-    /* ── Sidebar (wardrobe panel) ── */
-    aside {
-      grid-area: sidebar;
-      border-right: 1px solid var(--border);
-      background: var(--surface);
-      overflow-y: auto;
-      padding: 1.2rem 1rem;
-    }
-    aside h2 { font-size: 0.8rem; color: var(--accent); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 1rem; }
-    #wardrobe-list { display: flex; flex-direction: column; gap: 0.5rem; }
-    .wardrobe-item {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 0.5rem 0.7rem;
-      font-size: 0.78rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 0.4rem;
-    }
-    .wardrobe-item .meta { flex: 1; min-width: 0; }
-    .wardrobe-item .cat  { color: var(--accent); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; }
-    .wardrobe-item .col  { color: var(--muted); }
-    .wardrobe-item .vibes { color: #888; font-size: 0.68rem; margin-top: 0.15rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .wardrobe-item .del-btn {
-      background: none; border: none; color: var(--muted); cursor: pointer;
-      font-size: 0.9rem; padding: 0 0.2rem; flex-shrink: 0;
-      transition: color 0.15s;
-    }
-    .wardrobe-item .del-btn:hover { color: var(--red); }
-    #wardrobe-empty { color: var(--muted); font-size: 0.82rem; text-align: center; padding: 2rem 0; }
-    #wardrobe-count { color: var(--muted); font-size: 0.72rem; margin-bottom: 0.7rem; }
+        /* ── Splash Opening ── */
+        #splash {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-canvas);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
 
-    /* ── Main ── */
-    main {
-      grid-area: main;
-      overflow-y: auto;
-      padding: 1.5rem 2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1.2rem;
-    }
+        .splash-title {
+            font-family: var(--font-serif);
+            font-size: clamp(3rem, 10vw, 8rem);
+            font-weight: 300;
+            letter-spacing: -0.02em;
+            text-align: center;
+            margin-bottom: 1rem;
+            overflow: hidden;
+        }
 
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 1.4rem;
-    }
-    .card h2 { font-size: 0.85rem; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 1rem; }
+        .splash-tagline {
+            font-family: var(--font-label);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.6em;
+            color: var(--text-secondary);
+            opacity: 0;
+        }
 
-    label { display: block; font-size: 0.8rem; color: var(--muted); margin-bottom: 0.35rem; }
+        .splash-svg-wrap {
+            margin-top: 4rem;
+            width: 120px;
+            height: 120px;
+        }
 
-    textarea, input[type="text"], select {
-      width: 100%;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 0.92rem;
-      padding: 0.55rem 0.75rem;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    textarea { resize: vertical; min-height: 70px; }
-    textarea:focus, input:focus { border-color: var(--accent); }
+        #splash-line {
+            fill: none;
+            stroke: var(--text-accent);
+            stroke-width: 0.5px;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+        }
 
-    input[type="file"] {
-      display: none;
-    }
-    .file-drop {
-      width: 100%;
-      background: var(--bg);
-      border: 2px dashed var(--border);
-      border-radius: 8px;
-      color: var(--muted);
-      font-size: 0.82rem;
-      padding: 1.2rem;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s, color 0.2s;
-    }
-    .file-drop:hover, .file-drop.drag { border-color: var(--accent); color: var(--accent); }
-    .file-drop .icon { font-size: 1.6rem; display: block; margin-bottom: 0.4rem; }
-    #selected-files { margin-top: 0.6rem; display: flex; flex-direction: column; gap: 0.35rem; }
-    .file-queue-header { font-size: 0.74rem; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
-    .file-chip-list { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-top: 0.3rem; }
-    .file-chip {
-      display: inline-flex; align-items: center; gap: 0.3rem;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 4px; padding: 0.2rem 0.5rem;
-      font-size: 0.72rem; color: var(--text); max-width: 180px;
-    }
-    .file-chip span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .file-chip button {
-      background: none; border: none; color: var(--muted); cursor: pointer;
-      font-size: 0.8rem; padding: 0; line-height: 1; flex-shrink: 0;
-    }
-    .file-chip button:hover { color: var(--red); }
-    .clear-all { font-size: 0.72rem; color: var(--muted); cursor: pointer; text-decoration: underline; background: none; border: none; }
-    .clear-all:hover { color: var(--red); }
+        /* ── Style Profile Setup ── */
+        #profile-setup {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            padding: 10% 5%;
+            gap: 10%;
+            display: none; /* hidden by default */
+        }
 
-    .btn {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      background: var(--accent);
-      color: #0f0f0f;
-      border: none; border-radius: 6px;
-      padding: 0.55rem 1.3rem;
-      font-family: var(--font); font-size: 0.88rem;
-      cursor: pointer; transition: opacity 0.2s; margin-top: 0.8rem;
-      font-weight: bold;
-    }
-    .btn:hover    { opacity: 0.85; }
-    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
-    .btn-sm { padding: 0.3rem 0.8rem; font-size: 0.78rem; margin-top: 0; }
-    .btn-outline {
-      background: transparent; border: 1px solid var(--accent); color: var(--accent);
-    }
-    .btn-danger {
-      background: transparent; border: 1px solid var(--red); color: var(--red);
-      border-radius: 6px; padding: 0.25rem 0.7rem; font-size: 0.75rem;
-      cursor: pointer; font-family: var(--font); transition: opacity 0.2s;
-    }
-    .btn-danger:hover { opacity: 0.75; }
+        .profile-question {
+            font-family: var(--font-serif);
+            font-size: clamp(3rem, 6vw, 6rem);
+            line-height: 1.1;
+            font-style: italic;
+        }
 
-    /* ── Progress bar ── */
-    .progress-wrap { margin-top: 0.8rem; display: none; }
-    .progress-label { font-size: 0.76rem; color: var(--muted); margin-bottom: 0.3rem; display: flex; justify-content: space-between; }
-    .progress-bar {
-      height: 4px; background: var(--border); border-radius: 4px; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%; background: var(--accent); border-radius: 4px;
-      transition: width 0.4s ease; width: 0%;
-    }
-    .progress-fill.indeterminate {
-      width: 40%; animation: slide 1.2s ease-in-out infinite;
-    }
-    @keyframes slide {
-      0%   { transform: translateX(-100%); }
-      100% { transform: translateX(350%); }
-    }
+        .profile-choices {
+            display: flex;
+            flex-direction: column;
+            gap: 4rem;
+        }
 
-    /* ── Result ── */
-    #result-box { display: none; }
+        .choice-group label {
+            font-family: var(--font-label);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--text-secondary);
+            display: block;
+            margin-bottom: 1.5rem;
+        }
 
-    /* 3 suggestion cards side by side */
-    .suggestions-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 1rem;
-      margin-top: 0.5rem;
-    }
-    .suggestion-card {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 10px; padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem;
-    }
-    .suggestion-card .card-style-label {
-      font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted);
-      margin-bottom: 0.2rem;
-    }
+        .chip-grid { display: flex; flex-wrap: wrap; gap: 0.75rem; }
 
-    /* Item thumbnail cards — used in outfit result AND history */
-    .item-thumb-strip { display: flex; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
-    .item-thumb {
-      display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 0.4rem; width: 90px; flex-shrink: 0;
-    }
-    .item-thumb img {
-      width: 78px; height: 104px; object-fit: cover;
-      border-radius: 5px; background: #1e1e1e;
-    }
-    .item-thumb .thumb-cat {
-      font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.05em;
-      color: var(--muted); text-align: center; line-height: 1.2;
-    }
-    .item-thumb .thumb-color {
-      font-size: 0.6rem; color: var(--accent); text-align: center;
-    }
-    /* Placeholder when image is missing — shows category text, not emoji */
-    .item-thumb .thumb-placeholder {
-      width: 78px; height: 104px; border-radius: 5px;
-      background: #1e1e1e; border: 1px dashed var(--border);
-      display: flex; align-items: center; justify-content: center;
-      color: var(--muted); font-size: 0.6rem; text-align: center;
-      text-transform: uppercase; letter-spacing: 0.05em; padding: 0.3rem;
-    }
+        .chip {
+            padding: 0.8rem 1.5rem;
+            border: 1px solid var(--border-default);
+            font-family: var(--font-label);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.25s var(--ease-silk);
+        }
 
-    /* Flatlay image */
-    .flatlay-wrap {
-      position: relative; margin-bottom: 0.6rem; border-radius: 8px; overflow: hidden;
-    }
-    .flatlay-wrap img { width: 100%; border-radius: 8px; display: block; }
-    .flatlay-download {
-      position: absolute; top: 0.5rem; right: 0.5rem;
-      background: rgba(0,0,0,0.6); border: none; border-radius: 5px;
-      color: #fff; padding: 0.3rem 0.55rem; cursor: pointer; font-size: 0.75rem;
-      text-decoration: none; backdrop-filter: blur(4px);
-    }
-    .flatlay-download:hover { background: rgba(0,0,0,0.85); }
+        .chip:hover { border-color: var(--border-hover); transform: scale(1.02); }
 
-    .technique-row { color: #999; font-size: 0.82rem; }
-    .confidence-badge {
-      display: inline-block; border-radius: 4px; padding: 0.15rem 0.65rem;
-      font-size: 0.72rem; font-weight: bold; text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-    .safe         { background: #1a3a1a; color: #6fcf6f; }
-    .bold         { background: #3a2a1a; color: #e5a550; }
-    .experimental { background: #2a1a3a; color: #b57af0; }
-    .why-text     { font-size: 0.85rem; color: var(--muted); font-style: italic; line-height: 1.5; }
-    .gap-box {
-      background: #160d10; border: 1px solid #3e1a24;
-      border-radius: 6px; padding: 0.7rem 0.85rem; font-size: 0.8rem;
-    }
-    .gap-box .gap-label { color: #d07090; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
-    .gap-box .gap-missing { margin-bottom: 0.25rem; }
-    .gap-box .gap-hack { color: var(--muted); font-style: italic; }
+        .chip::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; height: 100%;
+            background: var(--bg-elevated);
+            z-index: -1;
+            clip-path: inset(100% 0 0 0);
+            transition: clip-path 0.4s var(--ease-silk);
+        }
 
-    /* ── History panel ── */
-    #history-list { display: flex; flex-direction: column; gap: 0.75rem; max-height: 420px; overflow-y: auto; }
-    .history-row {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 0.65rem 0.75rem; font-size: 0.76rem;
-    }
-    .history-row-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 0.5rem;
-    }
-    .h-date { color: var(--muted); font-size: 0.68rem; white-space: nowrap; }
-    .lock-badge { font-size: 0.65rem; background: #2a1a3a; color: #b57af0; border-radius: 3px; padding: 0.1rem 0.4rem; }
+        .chip.selected { border-color: var(--text-accent); color: var(--text-primary); }
+        .chip.selected::before { clip-path: inset(0 0 0 0); }
 
-    /* Smaller thumbs in history */
-    .history-row .item-thumb { width: 62px; }
-    .history-row .item-thumb img,
-    .history-row .item-thumb .thumb-placeholder { width: 54px; height: 72px; }
-    .history-row .item-thumb-strip { gap: 0.4rem; margin-bottom: 0; }
+        /* ── Wardrobe Wall ── */
+        #wardrobe-wall {
+            padding: 120px 5% 60px;
+            display: none;
+        }
 
-    /* ── Toasts ── */
-    #toast-container { position: fixed; bottom: 1.5rem; right: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; z-index: 999; }
-    .toast {
-      background: var(--surface2); border: 1px solid var(--border); border-radius: 6px;
-      padding: 0.6rem 1rem; font-size: 0.8rem; max-width: 300px;
-      animation: fadein 0.2s ease; transition: opacity 0.4s;
-    }
-    .toast.success { border-color: var(--green); color: var(--green); }
-    .toast.error   { border-color: var(--red);   color: var(--red); }
-    .toast.info    { border-color: var(--accent); color: var(--accent); }
-    @keyframes fadein { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; } }
+        .wall-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 80px;
+        }
 
-    footer { grid-area: footer; text-align: center; padding: 0.8rem; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.72rem; }
+        .wall-title {
+            font-family: var(--font-serif);
+            font-size: 4rem;
+            font-weight: 300;
+            letter-spacing: -0.04em;
+        }
 
-    @media (max-width: 700px) {
-      body { grid-template-columns: 1fr; grid-template-areas: "header" "main" "sidebar" "footer"; }
-      aside { border-right: none; border-top: 1px solid var(--border); }
-      main  { padding: 1rem; }
-    }
-  </style>
+        .masonry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            grid-auto-rows: 10px;
+            gap: 2rem;
+        }
+
+        .garment-card {
+            background: var(--bg-surface);
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.6s var(--ease-silk);
+        }
+
+        .garment-card:hover {
+            transform: translateY(-8px);
+            background: var(--bg-elevated);
+        }
+
+        .garment-card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border: 1px solid var(--text-accent);
+            opacity: 0;
+            transition: opacity 0.6s var(--ease-silk);
+        }
+        .garment-card:hover::after { opacity: 1; }
+
+        .garment-tag {
+            font-family: var(--font-label);
+            font-size: 0.55rem;
+            text-transform: uppercase;
+            letter-spacing: 0.25em;
+            color: var(--text-secondary);
+            margin-top: 2rem;
+        }
+
+        .garment-name {
+            font-family: var(--font-serif);
+            font-size: 1.1rem;
+            font-style: italic;
+            margin-top: 0.5rem;
+        }
+
+        /* ── Floating Style Me Button ── */
+        #style-me-btn {
+            position: fixed;
+            bottom: 3rem; right: 3rem;
+            background: var(--bg-canvas);
+            color: var(--text-primary);
+            padding: 1rem 2rem;
+            border-radius: 100px;
+            border: 1px solid var(--text-accent);
+            font-family: var(--font-label);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            cursor: pointer;
+            z-index: 500;
+            animation: border-pulse 4s infinite;
+        }
+
+        @keyframes border-pulse {
+            0% { border-color: rgba(201, 185, 154, 0.2); }
+            50% { border-color: rgba(201, 185, 154, 1); }
+            100% { border-color: rgba(201, 185, 154, 0.2); }
+        }
+
+        /* ── Stylist Chat Panel ── */
+        #chat-panel {
+            position: fixed;
+            top: 0; right: 0;
+            width: 42%;
+            height: 100vh;
+            background: #12110F; /* Slightly warmer than canvas */
+            border-left: 1px solid var(--border-default);
+            z-index: 1000;
+            transform: translateX(calc(100% + 20px));
+            display: flex;
+            flex-direction: column;
+            padding: 4rem;
+        }
+
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2.5rem;
+            padding-bottom: 2rem;
+            scrollbar-width: none;
+        }
+        .chat-history::-webkit-scrollbar { display: none; }
+
+        .msg { max-width: 85%; }
+        .msg.ai { align-self: flex-start; }
+        .msg.user { align-self: flex-end; text-align: right; }
+
+        .msg-text {
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+        .ai .msg-text { font-family: var(--font-serif); font-size: 1.25rem; color: var(--text-accent); font-style: italic; }
+        .user .msg-text { font-family: var(--font-sans); color: var(--text-primary); }
+
+        .ai-indicator { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-accent); letter-spacing: 0.5em; margin-top: 1rem; }
+
+        /* Look Card (Staged) */
+        .look-card {
+            margin-top: 2rem;
+            padding: 2rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-default);
+            display: flex;
+            gap: 1.5rem;
+            position: relative;
+            transform-origin: top;
+        }
+
+        .look-item {
+            flex: 1;
+            text-align: center;
+        }
+        .look-item img { width: 100%; filter: grayscale(0.2); }
+
+        .chat-input-wrap {
+            margin-top: auto;
+            position: relative;
+        }
+        #chat-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border-default);
+            color: var(--text-primary);
+            font-family: var(--font-serif);
+            font-size: 1.5rem;
+            padding: 1.5rem 0;
+            outline: none;
+            transition: border-color 0.4s var(--ease-silk);
+        }
+        #chat-input:focus { border-color: var(--text-accent); }
+
+        /* ── Sidebar (Archival) ── */
+        #sidebar {
+            position: fixed;
+            left: 0; top: 0; height: 100vh;
+            width: 280px;
+            background: var(--bg-canvas);
+            padding: 120px 3rem;
+            transform: translateX(-100%);
+            z-index: 800;
+            border-right: 1px solid var(--border-default);
+        }
+
+        .side-link {
+            display: block;
+            font-family: var(--font-label);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.3em;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        .side-link:hover, .side-link.active { color: var(--text-accent); }
+
+        /* ── Lookbook Grid ── */
+        #lookbook {
+            padding: 120px 5%;
+            display: none;
+        }
+
+        .editorial-row {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 4rem;
+            margin-bottom: 120px;
+        }
+
+        .editorial-img {
+            width: 100%;
+            aspect-ratio: 4/5;
+            background: var(--bg-surface);
+            overflow: hidden;
+        }
+        .editorial-img img { width: 100%; height: 100%; object-fit: cover; filter: sepia(0.2) contrast(1.1); }
+
+        .editorial-caption {
+            font-family: var(--font-serif);
+            font-size: 2rem;
+            font-style: italic;
+            margin-top: 1.5rem;
+            line-height: 1.2;
+        }
+
+        /* ── General UI ── */
+        .close-panel {
+            position: absolute;
+            top: 2rem; left: 2rem;
+            cursor: pointer;
+            font-family: var(--font-label);
+            font-size: 0.6rem;
+            letter-spacing: 0.2em;
+            color: var(--text-secondary);
+        }
+
+        /* ── Responsive ── */
+        @media (max-width: 1024px) {
+            #chat-panel { width: 100%; padding: 2rem; }
+            #profile-setup { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 4rem; }
+        }
+    </style>
 </head>
 <body>
 
-<!-- ── Header ─────────────────────────────────────────────────────────────── -->
-<header>
-  <div>
-    <h1>✦ The Stylist's Brain</h1>
-    <p>Local · Private · No subscriptions</p>
-  </div>
-  <div id="context-bar">
-    <span class="ctx-chip" id="weather-chip">⏳ weather…</span>
-    <span class="ctx-chip" id="calendar-chip">⏳ calendar…</span>
-  </div>
-</header>
-
-<!-- ── Sidebar — Wardrobe ─────────────────────────────────────────────────── -->
-<aside>
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.3rem;">
-    <h2 style="margin:0;">👗 Wardrobe</h2>
-    <button class="btn-danger" id="clear-wardrobe-btn" onclick="clearWardrobe()" title="Remove all items" style="display:none;">
-      🗑 Clear all
-    </button>
-  </div>
-  <div id="wardrobe-count"></div>
-  <div id="wardrobe-list">
-    <div id="wardrobe-empty">No items yet.<br/>Upload photos or a video scan.</div>
-  </div>
-</aside>
-
-<!-- ── Main ──────────────────────────────────────────────────────────────── -->
-<main>
-
-  <!-- Upload card -->
-  <div class="card">
-    <h2>📦 Add to Wardrobe</h2>
-    <label>Click to add photos — click again to add more, or drag &amp; drop</label>
-    <div class="file-drop" id="file-drop" onclick="document.getElementById('upload-input').click()"
-         ondragover="event.preventDefault();this.classList.add('drag')"
-         ondragleave="this.classList.remove('drag')"
-         ondrop="handleDrop(event)">
-      <span class="icon">📸</span>
-      <span id="file-drop-label">Click or drag photos here</span><br/>
-      <small>Each photo = one outfit — hold ⌘ in the picker to select many at once</small>
-    </div>
-    <!-- hidden input — value is cleared after each pick so onchange always fires -->
-    <input type="file" id="upload-input" accept="video/*,image/*" multiple
-           onchange="addFiles(this.files); this.value=''" />
-    <div id="selected-files"></div>
-
-    <div class="progress-wrap" id="upload-progress">
-      <div class="progress-label">
-        <span id="upload-status-text">Processing…</span>
-        <span id="upload-items-text"></span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill indeterminate" id="upload-fill"></div></div>
-    </div>
-
-    <button class="btn" id="upload-btn" onclick="uploadWardrobe()" disabled>
-      Catalog Items
-    </button>
-  </div>
-
-  <!-- Vibe query card -->
-  <div class="card">
-    <h2>✨ Get an Outfit</h2>
-    <label for="vibe-input">Describe your vibe or occasion</label>
-    <textarea id="vibe-input" placeholder="e.g. sharp but approachable for a rainy Monday meeting"></textarea>
-
-    <div style="display:flex;gap:0.6rem;align-items:flex-end;flex-wrap:wrap;">
-      <div style="flex:1;min-width:120px;">
-        <label for="model-select" style="margin-top:0.6rem;">LLM model</label>
-        <select id="model-select">
-          <option value="llama3.2:3b">llama3.2:3b (fast · installed)</option>
-          <option value="llama3:8b">llama3:8b (richer output)</option>
-          <option value="mistral:7b">mistral:7b</option>
-        </select>
-      </div>
-      <button class="btn" id="query-btn" onclick="queryOutfit()">Style Me ✦</button>
-    </div>
-
-    <div class="progress-wrap" id="query-progress">
-      <div class="progress-label"><span>Asking the stylist…</span><span style="color:var(--muted);font-size:0.7rem;">may take 20–60s on CPU</span></div>
-      <div class="progress-bar"><div class="progress-fill indeterminate"></div></div>
-    </div>
-  </div>
-
-  <!-- Result card -->
-  <div class="card" id="result-box">
-    <h2>🎨 Your Outfits</h2>
-    <div class="suggestions-grid" id="suggestions-grid"></div>
-    <button class="btn btn-outline btn-sm" style="margin-top:1rem" onclick="resetResult()">Try Another</button>
-  </div>
-
-  <!-- History card -->
-  <div class="card">
-    <h2 style="display:flex;justify-content:space-between;align-items:center;">
-      📋 Recent Outfits
-      <button class="btn btn-outline btn-sm" onclick="loadHistory()">Refresh</button>
-    </h2>
-    <div id="history-list"><p style="color:var(--muted);font-size:0.8rem;">No history yet.</p></div>
-  </div>
-
-</main>
-
-<footer>YOLOv8n · MobileSAM · CLIP ViT-B/32 · ChromaDB · Ollama — 100% local, 100% private · Built by <a href="https://github.com/Vaishnavi-Dubey" style="color:var(--accent);text-decoration:none;">Vaishnavi Dubey</a></footer>
-<div id="toast-container"></div>
-
-<script>
-// Empty string = same-origin (works when served from http://localhost:8000)
-// Falls back to explicit localhost if opened as a file:// page directly
-const API = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
-let _uploadFiles = [];   // Array — accumulates across multiple picker opens
-let _pollTimer   = null;
-
-// ── Context bar ──────────────────────────────────────────────────────────────
-async function loadContext() {
-  try {
-    const w = await apiFetch('/context/weather');
-    document.getElementById('weather-chip').textContent =
-      `🌤 ${w.condition}, ${w.temp_c}°C — ${w.city}`;
-  } catch { document.getElementById('weather-chip').textContent = '🌤 weather unavailable'; }
-
-  try {
-    const c = await apiFetch('/context/calendar');
-    document.getElementById('calendar-chip').textContent =
-      c.event ? `📅 ${c.event}` : '📅 No events today';
-  } catch { document.getElementById('calendar-chip').textContent = '📅 calendar unavailable'; }
-}
-
-// ── Wardrobe sidebar ──────────────────────────────────────────────────────────
-async function loadWardrobe() {
-  try {
-    // Cache-bust — browser must never serve a stale list after a delete
-    const data  = await apiFetch('/intake/items?_=' + Date.now());
-    const items = data.items || [];
-    const list  = document.getElementById('wardrobe-list');
-    const empty = document.getElementById('wardrobe-empty');
-    const count = document.getElementById('wardrobe-count');
-    const clearBtn = document.getElementById('clear-wardrobe-btn');
-
-    count.textContent = items.length
-      ? `${items.length} item${items.length !== 1 ? 's' : ''} catalogued`
-      : '';
-    if (clearBtn) clearBtn.style.display = items.length ? 'inline-block' : 'none';
-
-    if (!items.length) {
-      list.innerHTML = '';
-      empty.style.display = 'block';
-      list.appendChild(empty);
-      return;
-    }
-    empty.style.display = 'none';
-
-    list.innerHTML = items.map(item => {
-      const m     = item.metadata || {};
-      const vibes = Array.isArray(m.vibe_tags) ? m.vibe_tags.join(', ') : (m.vibe_tags || '');
-      return `<div class="wardrobe-item" data-item-id="${item.id}">
-        <div class="meta">
-          <div class="cat">${m.category || '?'}</div>
-          <div class="col">${m.dominant_color || ''}</div>
-          <div class="vibes">${vibes}</div>
+    <!-- Splash Screen -->
+    <div id="splash">
+        <h1 class="splash-title" id="splash-text">Stylist Brain.</h1>
+        <div class="splash-tagline">YOUR WARDROBE. REIMAGINED.</div>
+        <div class="splash-svg-wrap">
+            <svg viewBox="0 0 100 100">
+                <path id="splash-line" d="M20,80 L50,20 L80,80 L50,60 L20,80 Z" />
+            </svg>
         </div>
-        <button class="del-btn" title="Remove" onclick="deleteItem('${item.id}')">✕</button>
-      </div>`;
-    }).join('');
-  } catch(e) {
-    const count = document.getElementById('wardrobe-count');
-    if (count) count.textContent = '⚠ Server offline — run run.sh';
-  }
-}
-
-async function deleteItem(id) {
-  try {
-    await apiFetch(`/intake/items/${id}`, { method: 'DELETE' });
-
-    // Remove from DOM immediately — no re-fetch, no cache issue
-    const el = document.querySelector(`[data-item-id="${id}"]`);
-    if (el) el.remove();
-
-    // Recount what's left in the DOM
-    const remaining = document.querySelectorAll('.wardrobe-item').length;
-    const count    = document.getElementById('wardrobe-count');
-    const clearBtn = document.getElementById('clear-wardrobe-btn');
-    count.textContent = remaining
-      ? `${remaining} item${remaining !== 1 ? 's' : ''} catalogued`
-      : '';
-    if (clearBtn) clearBtn.style.display = remaining ? 'inline-block' : 'none';
-
-    if (!remaining) {
-      const list  = document.getElementById('wardrobe-list');
-      const empty = document.getElementById('wardrobe-empty');
-      empty.style.display = 'block';
-      list.appendChild(empty);
-    }
-
-    toast('Item removed', 'success');
-  } catch(e) {
-    toast(`Remove failed: ${e.message}`, 'error');
-  }
-}
-
-async function clearWardrobe() {
-  const count = document.querySelectorAll('.wardrobe-item').length;
-  if (!confirm(`Remove all ${count} item(s) from your wardrobe? This cannot be undone.`)) return;
-  try {
-    await apiFetch('/intake/items', { method: 'DELETE' });
-    toast('Wardrobe cleared', 'success');
-    loadWardrobe();
-  } catch(e) {
-    toast(`Clear failed: ${e.message}`, 'error');
-  }
-}
-
-// ── File handling — ACCUMULATES across multiple picker opens ──────────────────
-function addFiles(fileList) {
-  if (!fileList || !fileList.length) return;
-  const incoming = Array.from(fileList);
-
-  // Deduplicate by name + size — prevents adding the same file twice
-  const existing = new Set(_uploadFiles.map(f => f.name + f.size));
-  const added    = incoming.filter(f => !existing.has(f.name + f.size));
-
-  _uploadFiles = [..._uploadFiles, ...added];
-
-  if (added.length < incoming.length) {
-    toast(`${incoming.length - added.length} duplicate(s) skipped`, 'info');
-  }
-  renderFileQueue();
-}
-
-function removeFile(index) {
-  _uploadFiles.splice(index, 1);
-  renderFileQueue();
-}
-
-function clearAllFiles() {
-  _uploadFiles = [];
-  renderFileQueue();
-}
-
-function renderFileQueue() {
-  const btn     = document.getElementById('upload-btn');
-  const preview = document.getElementById('selected-files');
-  const label   = document.getElementById('file-drop-label');
-
-  if (!_uploadFiles.length) {
-    btn.disabled      = true;
-    preview.innerHTML = '';
-    label.textContent = 'Click or drag photos here';
-    return;
-  }
-
-  btn.disabled      = false;
-  label.textContent = `${_uploadFiles.length} photo${_uploadFiles.length > 1 ? 's' : ''} queued — click to add more`;
-
-  const total = _uploadFiles.reduce((s, f) => s + f.size, 0);
-  preview.innerHTML = `
-    <div class="file-queue-header">
-      <span>${_uploadFiles.length} file${_uploadFiles.length > 1 ? 's' : ''} — ${formatBytes(total)}</span>
-      <button class="clear-all" onclick="clearAllFiles()">Clear all</button>
     </div>
-    <div class="file-chip-list">
-      ${_uploadFiles.map((f, i) => `
-        <div class="file-chip">
-          <span title="${f.name}">${f.name}</span>
-          <button onclick="removeFile(${i})" title="Remove">✕</button>
-        </div>`).join('')}
-    </div>`;
-}
 
-function handleDrop(e) {
-  e.preventDefault();
-  document.getElementById('file-drop').classList.remove('drag');
-  addFiles(e.dataTransfer.files);
-}
-
-// ── Upload pipeline ───────────────────────────────────────────────────────────
-async function uploadWardrobe() {
-  if (!_uploadFiles.length) { toast('Add at least one photo first', 'info'); return; }
-
-  const form = new FormData();
-  for (const f of _uploadFiles) form.append('files', f);
-
-  setUploadLoading(true, `Uploading ${_uploadFiles.length} photo(s)…`);
-  document.getElementById('upload-btn').disabled = true;
-
-  try {
-    const data = await apiFetch('/intake/upload', { method: 'POST', body: form });
-    const jobId = data.job_id;
-    toast(`Job ${jobId} queued — processing in background`, 'info');
-    pollJobStatus(jobId);
-  } catch(e) {
-    setUploadLoading(false);
-    document.getElementById('upload-btn').disabled = false;
-    toast(`Upload failed: ${e.message}`, 'error');
-  }
-}
-
-function pollJobStatus(jobId) {
-  clearInterval(_pollTimer);
-  setUploadLoading(true, 'Processing wardrobe…');
-
-  _pollTimer = setInterval(async () => {
-    try {
-      const job = await apiFetch(`/intake/status/${jobId}`);
-      const fill = document.getElementById('upload-fill');
-      const itemsTxt = document.getElementById('upload-items-text');
-
-      if (job.total > 0) {
-        const pct = Math.round((job.items_added / job.total) * 100);
-        fill.classList.remove('indeterminate');
-        fill.style.width = pct + '%';
-        itemsTxt.textContent = `${job.items_added} / ${job.total} items`;
-      }
-
-      document.getElementById('upload-status-text').textContent =
-        { queued: 'Queued…', processing: `Processing (${job.items_added} items added)…`,
-          done: 'Done!', failed: 'Failed' }[job.status] || job.status;
-
-      if (job.status === 'done') {
-        clearInterval(_pollTimer);
-        setUploadLoading(false);
-        document.getElementById('upload-btn').disabled = false;
-        _uploadFiles = [];
-        renderFileQueue();
-        toast(`✓ Catalogued ${job.items_added} item(s)`, 'success');
-        loadWardrobe();
-        loadHistory();
-      } else if (job.status === 'failed') {
-        clearInterval(_pollTimer);
-        setUploadLoading(false);
-        document.getElementById('upload-btn').disabled = false;
-        toast(`Pipeline failed: ${job.error || 'unknown error'}`, 'error');
-      }
-    } catch(e) { /* poll errors are transient — keep trying */ }
-  }, 2000);   // poll every 2 seconds
-}
-
-function setUploadLoading(on, label = '') {
-  const wrap = document.getElementById('upload-progress');
-  const fill = document.getElementById('upload-fill');
-  wrap.style.display = on ? 'block' : 'none';
-  if (on) {
-    document.getElementById('upload-status-text').textContent = label;
-    document.getElementById('upload-items-text').textContent  = '';
-    fill.classList.add('indeterminate');
-    fill.style.width = '0%';
-  }
-}
-
-// ── Outfit query ──────────────────────────────────────────────────────────────
-async function queryOutfit() {
-  const vibe  = document.getElementById('vibe-input').value.trim();
-  const model = document.getElementById('model-select').value;
-  if (!vibe) { toast('Describe a vibe first', 'info'); return; }
-
-  document.getElementById('query-progress').style.display = 'block';
-  document.getElementById('query-btn').disabled = true;
-  document.getElementById('result-box').style.display = 'none';
-
-  try {
-    const data = await apiFetch('/styling/outfit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ vibe, model }),
-    });
-    renderResult(data);
-    loadHistory();
-    loadWardrobe();
-  } catch(e) {
-    toast(`Styling error: ${e.message}`, 'error');
-  } finally {
-    document.getElementById('query-progress').style.display = 'none';
-    document.getElementById('query-btn').disabled = false;
-  }
-}
-
-function thumbHtml(id, category, color) {
-  const imgUrl = `${API}/intake/image/${id}?_=${Date.now()}`;
-  // Bug 5 fix: placeholder shows category text, not an emoji
-  const placeholder = category || id.slice(-6);
-  return `<div class="item-thumb">
-    <img src="${imgUrl}" alt="${category || id}"
-         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"
-         loading="lazy" />
-    <div class="thumb-placeholder" style="display:none">${placeholder}</div>
-    <div class="thumb-cat">${category || '—'}</div>
-    ${color ? `<div class="thumb-color">${color}</div>` : ''}
-  </div>`;
-}
-
-function suggestionCardHtml(s, idx) {
-  const styleLabel = { safe: '① Classic', creative: '② Creative', experimental: '③ Bold' }[s._style] ||
-                     `Option ${idx + 1}`;
-  const outfit  = s.outfit || [];
-  const flatlay = s.images && s.images.flatlay;
-  const techs   = (s.styling_techniques || []).join(' · ');
-  const conf    = (s.confidence || '').replace(/\s*\|\s*/g, '').trim().toLowerCase();
-  const gap     = s.gap || {};
-
-  const flatlayHtml = flatlay
-    ? `<div class="flatlay-wrap">
-         <img src="${API}${flatlay}?_=${Date.now()}" alt="Outfit flat-lay" loading="lazy" />
-         <a class="flatlay-download" download="outfit_${idx+1}.png" href="${API}${flatlay}?_=${Date.now()}">⬇ Save</a>
-       </div>`
-    : `<div class="item-thumb-strip">${outfit.map(id => thumbHtml(id, null, null)).join('')}</div>`;
-
-  const gapHtml = gap.missing_item
-    ? `<div class="gap-box">
-         <div class="gap-label">⚠ Wardrobe Gap</div>
-         <div class="gap-missing">Missing: ${gap.missing_item}</div>
-         <div class="gap-hack">${gap.diy_hack || ''}</div>
-       </div>`
-    : '';
-
-  return `<div class="suggestion-card">
-    <div class="card-style-label">${styleLabel}</div>
-    ${flatlayHtml}
-    ${techs ? `<p class="technique-row">✂ ${techs}</p>` : ''}
-    <span class="confidence-badge ${conf}">${conf || 'unknown'}</span>
-    <p class="why-text">${s.why || ''}</p>
-    ${gapHtml}
-  </div>`;
-}
-
-function renderResult(data) {
-  const suggestions = data.suggestions || [data];   // backward compat with old flat format
-  document.getElementById('suggestions-grid').innerHTML =
-    suggestions.map((s, i) => suggestionCardHtml(s, i)).join('');
-  document.getElementById('result-box').style.display = 'block';
-  document.getElementById('result-box').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-}
-
-function resetResult() {
-  document.getElementById('result-box').style.display = 'none';
-  document.getElementById('suggestions-grid').innerHTML = '';
-  document.getElementById('vibe-input').value = '';
-  document.getElementById('vibe-input').focus();
-}
-
-// ── History panel ─────────────────────────────────────────────────────────────
-async function loadHistory() {
-  try {
-    const data = await apiFetch('/styling/history?limit=10');
-    const list = document.getElementById('history-list');
-    if (!data.history || !data.history.length) {
-      list.innerHTML = '<p style="color:var(--muted);font-size:0.8rem;">No history yet.</p>';
-      return;
-    }
-    list.innerHTML = data.history.map(row => {
-      const items    = row.items || [];
-      const date     = (row.created_at || '').replace('T', ' ').slice(0, 16);
-      const locked   = row.unlocked === 0 ? '' : '';
-
-      const thumbs = items.map(it =>
-        thumbHtml(it.id, it.category, it.dominant_color)
-      ).join('');
-
-      return `<div class="history-row">
-        <div class="history-row-header">
-          <span style="font-size:0.7rem;color:var(--muted);">${items.length} piece${items.length !== 1 ? 's' : ''}</span>
-          <span class="h-date">${date}</span>
+    <!-- Sidebar -->
+    <div id="sidebar">
+        <a href="#" class="side-link active" onclick="showSection('wardrobe-wall')">ALL SPECIMENS</a>
+        <a href="#" class="side-link" onclick="showSection('wardrobe-wall')">TOPS</a>
+        <a href="#" class="side-link" onclick="showSection('wardrobe-wall')">BOTTOMS</a>
+        <a href="#" class="side-link" onclick="showSection('lookbook')">LOOKBOOK</a>
+        <div style="margin-top: 100px;">
+            <a href="#" class="side-link" style="color: var(--accent-line)" onclick="document.getElementById('upload-input').click()">+ ADD PIECE</a>
         </div>
-        <div class="item-thumb-strip">${thumbs}</div>
-      </div>`;
-    }).join('');
-  } catch { /* non-fatal */ }
-}
+    </div>
 
-// ── Utilities ─────────────────────────────────────────────────────────────────
-async function apiFetch(path, opts = {}) {
-  const r = await fetch(API + path, opts);
-  if (!r.ok) {
-    let msg = `HTTP ${r.status}`;
-    try { const d = await r.json(); msg = d.detail || msg; } catch {}
-    throw new Error(msg);
-  }
-  return r.json();
-}
+    <!-- Main Content Sections -->
+    <main>
+        <!-- 1. Style Profile -->
+        <section id="profile-setup">
+            <div class="profile-question">What does your style say about you?</div>
+            <div class="profile-choices">
+                <div class="choice-group">
+                    <label>Aesthetic Identity</label>
+                    <div class="chip-grid">
+                        <div class="chip" onclick="toggleChip(this)">Minimalist</div>
+                        <div class="chip" onclick="toggleChip(this)">Maximalist</div>
+                        <div class="chip" onclick="toggleChip(this)">Streetwear</div>
+                        <div class="chip" onclick="toggleChip(this)">Avant-Garde</div>
+                        <div class="chip" onclick="toggleChip(this)">Romantic</div>
+                    </div>
+                </div>
+                <div class="choice-group">
+                    <label>Daily Rhythm</label>
+                    <div class="chip-grid">
+                        <div class="chip" onclick="toggleChip(this)">Corporate</div>
+                        <div class="chip" onclick="toggleChip(this)">Creative Studio</div>
+                        <div class="chip" onclick="toggleChip(this)">Field Work</div>
+                    </div>
+                </div>
+                <button class="chip" style="margin-top: 4rem; width: 100%; border-color: var(--text-accent);" onclick="completeProfile()">Confirm Profile</button>
+            </div>
+        </section>
 
-function toast(msg, type = 'info') {
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.textContent = msg;
-  document.getElementById('toast-container').appendChild(el);
-  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 3500);
-}
+        <!-- 2. Wardrobe Wall -->
+        <section id="wardrobe-wall">
+            <div class="wall-header">
+                <h2 class="wall-title">The Archive.</h2>
+                <div style="font-family: var(--font-label); font-size: 0.6rem; color: var(--text-secondary); letter-spacing: 0.3em;">
+                    <span id="wardrobe-count">0</span> SPECIMENS CATALOGUED
+                </div>
+            </div>
+            <div class="masonry-grid" id="wardrobe-grid">
+                <!-- Garment cards injected here -->
+            </div>
+        </section>
 
-function formatBytes(b) {
-  if (b < 1024) return b + ' B';
-  if (b < 1024*1024) return (b/1024).toFixed(1) + ' KB';
-  return (b/1024/1024).toFixed(1) + ' MB';
-}
+        <!-- 3. Lookbook -->
+        <section id="lookbook">
+            <h2 class="wall-title" style="margin-bottom: 100px;">The Lookbook.</h2>
+            <div id="lookbook-grid">
+                <!-- Editorial rows injected here -->
+            </div>
+        </section>
+    </main>
 
-// ── Auto-detect installed Ollama models ───────────────────────────────────────
-async function detectOllamaModels() {
-  try {
-    const r = await fetch('http://localhost:11434/api/tags');
-    const d = await r.json();
-    const models = (d.models || []).map(m => m.name);
-    const sel = document.getElementById('model-select');
-    if (!models.length) return;
-    // Prefer smallest model that matches known safe list
-    const preferred = ['llama3.2:3b','llama3.2:1b','mistral:7b','llama3:8b','llama3.1:8b'];
-    const available = preferred.filter(m => models.includes(m));
-    const others    = models.filter(m => !preferred.includes(m));
-    sel.innerHTML = [...available, ...others].map((m, i) =>
-      `<option value="${m}"${i===0?' selected':''}>${m}${i===0?' (installed)':''}</option>`
-    ).join('');
-  } catch { /* Ollama not running yet — keep static options */ }
-}
+    <!-- Stylist Chat Panel -->
+    <div id="chat-panel">
+        <div class="close-panel" onclick="toggleChat(false)">CLOSE —</div>
+        <div class="chat-history" id="chat-history">
+            <div class="msg ai">
+                <div class="msg-text">How shall we interpret your archive today?</div>
+            </div>
+        </div>
+        <div class="chat-input-wrap">
+            <input type="text" id="chat-input" placeholder="Type your intent..." onkeypress="if(event.key==='Enter') sendChat()">
+        </div>
+    </div>
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-loadContext();
-loadWardrobe();
-loadHistory();
-detectOllamaModels();
-</script>
+    <!-- Style Me Trigger -->
+    <button id="style-me-btn" onclick="toggleChat(true)">Style Me</button>
+
+    <!-- Hidden Upload -->
+    <input type="file" id="upload-input" style="display:none" multiple onchange="handleUpload(this.files)" />
+
+    <script>
+        // ── Sample Data ───────────────────────────────────────────────────────────
+        const SAMPLE_WARDROBE = [
+            { id: '1', name: 'Oversized Silk Blazer', cat: 'TOPS', color: 'Midnight' },
+            { id: '2', name: 'Deconstructed Denim', cat: 'BOTTOMS', color: 'Raw' },
+            { id: '3', name: 'Cashmere Mockneck', cat: 'TOPS', color: 'Ecru' },
+            { id: '4', name: 'Structured Wool Coat', cat: 'OUTERWEAR', color: 'Camel' },
+            { id: '5', name: 'Leather Chelsea Boots', cat: 'SHOES', color: 'Onyx' },
+            { id: '6', name: 'Pleated Trousers', cat: 'BOTTOMS', color: 'Slate' },
+            { id: '7', name: 'Sheer Organza Shirt', cat: 'TOPS', color: 'Mist' },
+            { id: '8', name: 'Velvet Evening Slip', cat: 'OCCASION', color: 'Wine' }
+        ];
+
+        // ── Animation Setup ───────────────────────────────────────────────────────
+        const lenis = new Lenis();
+        function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+        requestAnimationFrame(raf);
+
+        // ── Splash Sequence ───────────────────────────────────────────────────────
+        function runSplash() {
+            const splash = document.getElementById('splash');
+            const tl = gsap.timeline({ onComplete: () => {
+                gsap.to(splash, { opacity: 0, pointerEvents: 'none', duration: 1.2, ease: "power4.inOut" });
+                initProfile();
+            }});
+
+            // Safety net: Auto-clear splash after 7s if animation hangs
+            const safety = setTimeout(() => {
+                if (splash.style.pointerEvents !== 'none') {
+                    console.warn("Splash animation timed out - clearing manually.");
+                    gsap.to(splash, { opacity: 0, pointerEvents: 'none', duration: 1 });
+                    initProfile();
+                }
+            }, 7000);
+
+            // Manual Skip
+            splash.addEventListener('click', () => {
+                clearTimeout(safety);
+                gsap.to(splash, { opacity: 0, pointerEvents: 'none', duration: 0.8 });
+                initProfile();
+            });
+
+            // Letter by letter reveal
+            const splashText = document.getElementById('splash-text');
+            const text = splashText.innerText;
+            splashText.innerHTML = text.split('').map(l => `<span>${l === ' ' ? '&nbsp;' : l}</span>`).join('');
+
+            tl.from('#splash-text span', { 
+                y: 60, 
+                opacity: 0, 
+                duration: 1.2, 
+                stagger: 0.04, 
+                ease: "cubic-bezier(0.16, 1, 0.3, 1)" 
+            })
+            .to('.splash-tagline', { opacity: 1, duration: 1 }, "-=0.6")
+            .to('#splash-line', { strokeDashoffset: 0, duration: 1.2, ease: "power2.inOut" }, "-=0.8")
+            .to(splash, { y: '-100%', delay: 0.5, duration: 1.2, ease: "expo.inOut" });
+        }
+
+        // ── App Logic ─────────────────────────────────────────────────────────────
+        function initProfile() {
+            const profile = document.getElementById('profile-setup');
+            gsap.set(profile, { display: 'grid', opacity: 0, y: 30 });
+            gsap.to(profile, { opacity: 1, y: 0, duration: 1.2, ease: "cubic-bezier(0.16, 1, 0.3, 1)" });
+        }
+
+        function toggleChip(el) {
+            el.classList.toggle('selected');
+        }
+
+        function completeProfile() {
+            gsap.to('#profile-setup', { opacity: 0, y: -50, duration: 0.8, onComplete: () => {
+                document.getElementById('profile-setup').style.display = 'none';
+                initMain();
+            }});
+        }
+
+        function initMain() {
+            showSection('wardrobe-wall');
+            gsap.to('#sidebar', { x: 0, duration: 0.8, ease: "cubic-bezier(0.16, 1, 0.3, 1)" });
+            gsap.to('#style-me-btn', { opacity: 1, scale: 1, duration: 0.5 });
+            renderWardrobe();
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('section').forEach(s => s.style.display = 'none');
+            const target = document.getElementById(id);
+            target.style.display = 'block';
+            gsap.from(target, { opacity: 0, y: 30, duration: 0.8, ease: "cubic-bezier(0.16, 1, 0.3, 1)" });
+        }
+
+        function renderWardrobe() {
+            const grid = document.getElementById('wardrobe-grid');
+            grid.innerHTML = SAMPLE_WARDROBE.map((item, i) => `
+                <div class="garment-card" style="grid-row-end: span ${15 + (i % 3) * 5}">
+                    <div class="garment-tag">${item.cat} / ${item.color}</div>
+                    <div class="garment-name">${item.name}</div>
+                </div>
+            `).join('');
+            
+            gsap.from('.garment-card', { 
+                opacity: 0, 
+                y: 40, 
+                stagger: 0.07, 
+                duration: 0.8, 
+                ease: "cubic-bezier(0.16, 1, 0.3, 1)" 
+            });
+            document.getElementById('wardrobe-count').textContent = SAMPLE_WARDROBE.length;
+        }
+
+        function toggleChat(on) {
+            gsap.to('#chat-panel', { 
+                x: on ? 0 : 'calc(100% + 20px)', 
+                duration: 0.7, 
+                ease: on ? "cubic-bezier(0.16, 1, 0.3, 1)" : "power2.in" 
+            });
+        }
+
+        async function sendChat() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+            
+            addMsg(text, 'user');
+            input.value = '';
+            
+            const aiMsg = addMsg('', 'ai');
+            const indicator = document.createElement('div');
+            indicator.className = 'ai-indicator';
+            indicator.textContent = '— — —';
+            aiMsg.appendChild(indicator);
+
+            // Mock AI behavior
+            setTimeout(() => {
+                indicator.remove();
+                aiMsg.querySelector('.msg-text').textContent = "Interpretation complete. I've curated a silhouette that honors the architecture of your archive.";
+                addLookCard(aiMsg);
+            }, 1500);
+        }
+
+        function addMsg(text, type) {
+            const hist = document.getElementById('chat-history');
+            const el = document.createElement('div');
+            el.className = `msg ${type}`;
+            el.innerHTML = `<div class="msg-text">${text}</div>`;
+            hist.appendChild(el);
+            hist.scrollTop = hist.scrollHeight;
+            gsap.from(el, { opacity: 0, y: 20, duration: 0.5 });
+            return el;
+        }
+
+        function addLookCard(parent) {
+            const card = document.createElement('div');
+            card.className = 'look-card';
+            card.innerHTML = `
+                <div class="look-item" style="font-family: var(--font-label); font-size: 0.5rem; letter-spacing: 0.2em;">
+                    TOP<br>SILK BLAZER
+                </div>
+                <div style="width: 1px; background: var(--border-default);"></div>
+                <div class="look-item" style="font-family: var(--font-label); font-size: 0.5rem; letter-spacing: 0.2em;">
+                    BOTTOM<br>RAW DENIM
+                </div>
+            `;
+            parent.appendChild(card);
+            gsap.from(card, { 
+                opacity: 0, 
+                rotateX: 8, 
+                y: 20, 
+                duration: 0.8, 
+                ease: "cubic-bezier(0.34, 1.56, 0.64, 1)" 
+            });
+        }
+
+        async function handleUpload(files) {
+            // Preservation of backend connectivity logic
+            const API = window.location.protocol === 'file:' ? 'http://localhost:8000' : '';
+            if (!files.length) return;
+            
+            // Show ingestion toast/status (simplified for this demo)
+            console.log("Ingesting Specimen Data...");
+            
+            const form = new FormData();
+            for (const f of files) form.append('files', f);
+            
+            try {
+                const r = await fetch(API + '/intake/upload', { method: 'POST', body: form });
+                if (r.ok) {
+                    const data = await r.json();
+                    addMsg(`Specimen Ingestion ${data.job_id} initiated. The archive will expand shortly.`, 'ai');
+                }
+            } catch(e) { console.warn("Local server not reachable - demo mode active."); }
+        }
+
+        // ── Initialize ────────────────────────────────────────────────────────────
+        window.addEventListener('load', runSplash);
+    </script>
 </body>
 </html>

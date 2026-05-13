@@ -29,3 +29,4 @@ google-auth-httplib2==0.2.0
 # Utilities
 python-dotenv==1.0.1          # load .env for OWM_API_KEY
 scikit-learn>=1.4.0           # K-means clustering for dominant color extraction
+numpy<2.0.0                   # Fix for ChromaDB np.float_ error

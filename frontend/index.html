@@ -3,24 +3,31 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>The Stylist's Brain</title>
+  <title>The Stylist's Brain — AI Wardrobe Assistant</title>
+  <meta name="description" content="AI-powered wardrobe styling — YOLOv8, CLIP, MobileSAM & Ollama analyze your clothes and recommend outfits. 100% local, 100% private." />
+  <meta property="og:title" content="The Stylist's Brain" />
+  <meta property="og:description" content="5 AI models analyze your closet. An LLM dresses you. All on your laptop." />
+  <meta property="og:type" content="website" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300..700;1,9..40,300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:      #0f0f0f;
-      --surface: #161616;
-      --surface2:#1e1e1e;
-      --border:  #2a2a2a;
-      --accent:  #c8a96e;
-      --accent2: #a07840;
-      --text:    #e8e8e8;
-      --muted:   #777;
+      --bg:      #0a0a0b;
+      --surface: #141416;
+      --surface2:#1c1c20;
+      --border:  #28282e;
+      --accent:  #d4a843;
+      --accent2: #b08930;
+      --text:    #ebebeb;
+      --muted:   #787880;
       --green:   #4caf6f;
       --red:     #d06060;
       --radius:  10px;
-      --font:    'Georgia', serif;
-      --mono:    'Menlo', monospace;
+      --font:    'DM Sans', system-ui, sans-serif;
+      --mono:    'JetBrains Mono', 'Menlo', monospace;
     }
 
     body {
@@ -418,7 +425,7 @@
 
 </main>
 
-<footer>YOLOv8n · MobileSAM · CLIP ViT-B/32 · ChromaDB · Ollama — 100% on your Mac</footer>
+<footer>YOLOv8n · MobileSAM · CLIP ViT-B/32 · ChromaDB · Ollama — 100% local, 100% private · Built by <a href="https://github.com/Vaishnavi-Dubey" style="color:var(--accent);text-decoration:none;">Vaishnavi Dubey</a></footer>
 <div id="toast-container"></div>
 
 <script>

@@ -1,0 +1,40 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose.yml — One-command launch for The Stylist's Brain
+# Usage: docker-compose up --build
+# ─────────────────────────────────────────────────────────────────────────────
+services:
+  stylist-brain:
+    build: .
+    container_name: stylist-brain
+    ports:
+      - "8000:8000"
+    environment:
+      - OWM_API_KEY=${OWM_API_KEY:-}
+      - OLLAMA_HOST=http://ollama:11434
+    volumes:
+      - ./wardrobe:/app/wardrobe
+      - ./output:/app/output
+      - chroma-data:/app/chroma_store
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: stylist-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  chroma-data:
+  ollama-data:

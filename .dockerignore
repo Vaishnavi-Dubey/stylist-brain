@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# .dockerignore — Keep the Docker build context lean
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Data / state
+wardrobe/
+output/
+chroma_store/
+stylist.db
+models/
+*.pt
+
+# Python
+.venv/
+env/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.coverage
+
+# Git
+.git/
+.github/
+
+# System
+.DS_Store
+*.swp
+*.swo
+
+# Docs
+docs/
+*.md
+!README.md
+LICENSE
+CONTRIBUTING.md

@@ -1,135 +1,118 @@
-# 🚀 Stylist Brain — AI-Powered Personal Styling Assistant
-
 <div align="center">
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Issues](https://img.shields.io/github/issues/Vaishnavi-Dubey/stylist-brain.svg?style=for-the-badge)](https://github.com/Vaishnavi-Dubey/stylist-brain/issues)
-[![Stars](https://img.shields.io/github/stars/Vaishnavi-Dubey/stylist-brain.svg?style=for-the-badge)](https://github.com/Vaishnavi-Dubey/stylist-brain/stargazers)
+# 👗 The Stylist's Brain
 
-![Python](https://img.shields.io/badge/Python-14354C?style=for-the-badge&logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-005571?style=for-the-badge&logo=fastapi&logoColor=white)
-![OpenCV](https://img.shields.io/badge/OpenCV-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)
-![PyTorch](https://img.shields.io/badge/PyTorch-EE4C2C?style=for-the-badge&logo=pytorch&logoColor=white)
-![YOLO](https://img.shields.io/badge/YOLOv8-111111?style=for-the-badge&logo=yolo&logoColor=white)
+**Your wardrobe, analyzed by 5 AI models. Your outfits, chosen by an LLM.**
+**100% local. 100% private. Zero cloud APIs.**
+
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![YOLOv8](https://img.shields.io/badge/YOLOv8-nano-FF6F00?style=flat-square)](https://docs.ultralytics.com)
+[![CLIP](https://img.shields.io/badge/CLIP-ViT--B/32-412991?style=flat-square&logo=openai&logoColor=white)](https://openai.com/clip)
+[![Ollama](https://img.shields.io/badge/Ollama-Llama3:8b-000000?style=flat-square)](https://ollama.ai)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
+[![CI](https://github.com/Vaishnavi-Dubey/stylist-brain/actions/workflows/ci.yml/badge.svg)](https://github.com/Vaishnavi-Dubey/stylist-brain/actions)
 
 </div>
 
-> A cutting-edge AI styling assistant that uses **computer vision** (YOLOv8, CLIP, MobileSAM) and **vector databases** (ChromaDB) to analyze your wardrobe, detect garments, extract dominant colors, and deliver personalized outfit recommendations — all powered by a FastAPI backend.
+---
+
+## ⚡ What This Actually Does
+
+Upload a photo of a garment. The system:
+
+1. **Removes the background** → rembg / U2Net
+2. **Detects the garment** → YOLOv8 nano
+3. **Segments it precisely** → MobileSAM
+4. **Extracts dominant colors** → K-means clustering
+5. **Generates semantic embeddings** → CLIP ViT-B/32
+6. **Stores it in a vector database** → ChromaDB
+7. **Checks today's weather** → OpenWeatherMap API
+8. **Reads your calendar** → Google Calendar API
+9. **Asks an LLM to style you** → Ollama / Llama3:8b
+
+All running **locally** on your machine. No data leaves your laptop.
 
 ---
 
-## ✨ Key Features
+## 🏗️ Architecture
 
-- 👗 **Garment Detection** — YOLOv8 nano model identifies clothing items in uploaded images
-- 🎨 **Color Extraction** — K-means clustering extracts dominant colors from detected garments
-- 🧠 **CLIP Embeddings** — OpenAI CLIP (ViT-B/32) generates semantic embeddings for style matching
-- ✂️ **Background Removal** — rembg (U2Net) isolates garments from backgrounds for clean analysis
-- 🔍 **Smart Segmentation** — MobileSAM provides precise garment segmentation masks
-- 📊 **Vector Search** — ChromaDB stores and retrieves style vectors for similarity-based recommendations
-- 🌤️ **Weather-Aware** — Integrates weather API for context-aware outfit suggestions
-- 📅 **Calendar Integration** — Optional Google Calendar sync for event-appropriate styling
+```mermaid
+graph TB
+    A["📷 Image Upload"] --> B["rembg — Background Removal"]
+    B --> C["YOLOv8n — Garment Detection"]
+    C --> D["MobileSAM — Precise Segmentation"]
+    D --> E["K-means — Color Extraction"]
+    D --> F["CLIP ViT-B/32 — Style Embeddings"]
+    E --> G[("SQLite — Garment Metadata")]
+    F --> H[("ChromaDB — Vector Store")]
 
----
+    I["🌤️ Weather API"] --> J["Context Engine"]
+    K["📅 Google Calendar"] --> J
 
-## 🧠 Tech Stack
+    H --> L["Vector Similarity Search"]
+    G --> L
+    J --> L
+    L --> M["🧠 Ollama / Llama3:8b"]
+    M --> N["✨ Outfit Recommendation"]
 
-| Layer | Technology |
-|-------|-----------|
-| **Backend Framework** | FastAPI, Uvicorn |
-| **Object Detection** | YOLOv8 (Ultralytics nano) |
-| **Image Embeddings** | OpenAI CLIP (ViT-B/32 via open_clip_torch) |
-| **Segmentation** | MobileSAM |
-| **Background Removal** | rembg (U2Net) |
-| **Computer Vision** | OpenCV (headless), Pillow |
-| **ML Framework** | PyTorch, Torchvision |
-| **Vector Database** | ChromaDB |
-| **Color Analysis** | Scikit-learn (K-means) |
-| **API Calls** | httpx (Ollama + Weather APIs) |
-| **Frontend** | HTML/JS (lightweight demo UI) |
-
----
-
-## 🏗️ Architecture / How It Works
-
-```
-┌──────────────────────────────────────────────────────────┐
-│                    User Upload (Image)                   │
-└──────────────────┬───────────────────────────────────────┘
-                   ▼
-┌──────────────────────────────────────────────────────────┐
-│  INTAKE MODULE — Image preprocessing & background removal│
-│  rembg (U2Net) → clean garment isolation                 │
-└──────────────────┬───────────────────────────────────────┘
-                   ▼
-┌──────────────────────────────────────────────────────────┐
-│  IMAGING MODULE — Detection & Feature Extraction         │
-│  YOLOv8n → garment bounding boxes                        │
-│  MobileSAM → precise segmentation masks                  │
-│  CLIP ViT-B/32 → semantic style embeddings               │
-│  K-means → dominant color extraction                     │
-└──────────────────┬───────────────────────────────────────┘
-                   ▼
-┌──────────────────────────────────────────────────────────┐
-│  CONTEXT MODULE — Environmental awareness                │
-│  Weather API → temperature, conditions                   │
-│  Google Calendar → upcoming events                       │
-└──────────────────┬───────────────────────────────────────┘
-                   ▼
-┌──────────────────────────────────────────────────────────┐
-│  STYLING MODULE — Recommendation Engine                  │
-│  ChromaDB → vector similarity search                     │
-│  Context matching → weather + event + style preferences  │
-│  → Personalized outfit recommendation                    │
-└──────────────────────────────────────────────────────────┘
+    style A fill:#7c3aed,color:#fff
+    style M fill:#f59e0b,color:#000
+    style N fill:#22c55e,color:#000
 ```
 
 ---
 
-## ⚙️ Installation & Setup
+## 🚀 Why This Stands Out
+
+| Feature | Why It Matters |
+|---|---|
+| **5-model pipeline** | Not a single-model demo — orchestrates YOLO + SAM + CLIP + U2Net + LLM in sequence |
+| **Privacy-first** | All inference runs locally via Ollama. Your wardrobe data never touches the cloud |
+| **Video intake** | Scan your entire closet by walking past it with your phone camera |
+| **Wardrobe intelligence** | Gap analysis, wearing pattern tracking, and outfit history |
+| **Context-aware** | Checks weather + calendar events before suggesting outfits |
+| **Not a wrapper** | The LLM reasons about color theory, weather, occasion, and your wardrobe history — not just random picks |
+
+---
+
+## 🛠️ Quick Start
 
 ### Prerequisites
-- Python 3.10+
-- pip
 
-### Quick Start
+- Python 3.10+
+- [Ollama](https://ollama.ai) installed (`brew install ollama`)
+- An LLM model pulled (`ollama pull llama3:8b`)
+
+### Setup
 
 ```bash
-# Clone the repository
+# Clone
 git clone https://github.com/Vaishnavi-Dubey/stylist-brain.git
 cd stylist-brain
 
-# Install dependencies
-pip install -r requirements.txt
+# Environment setup (creates venv, installs deps)
+bash setup.sh
 
-# Install MobileSAM (from source)
-pip install git+https://github.com/ChaoningZhang/MobileSAM.git
+# Download model weights (YOLOv8n, MobileSAM)
+bash download_models.sh
 
-# Download MobileSAM weights
-wget -P models/ https://github.com/ChaoningZhang/MobileSAM/raw/master/weights/mobile_sam.pt
-
-# Configure environment
+# Configure API keys
 cp .env.example .env
-# Edit .env with your OWM_API_KEY (OpenWeatherMap)
+# → Add your OpenWeatherMap key (free tier)
 
-# Run the application
-sh run.sh
-# Or directly:
-uvicorn backend.main:app --reload
+# Launch
+bash run.sh
+# → Opens http://localhost:8000
 ```
 
-### Environment Variables
-| Variable | Description |
-|----------|-------------|
-| `OWM_API_KEY` | OpenWeatherMap API key for weather-aware styling |
+### Docker (one command)
 
----
-
-## ▶️ Usage
-
-1. Start the server: `sh run.sh`
-2. Open `http://localhost:8000` in your browser
-3. Upload a photo of your outfit or wardrobe
-4. Receive AI-powered styling analysis and recommendations
+```bash
+docker-compose up --build
+# → Backend: http://localhost:8000
+# → API docs: http://localhost:8000/docs
+```
 
 ---
 
@@ -138,59 +121,110 @@ uvicorn backend.main:app --reload
 ```
 stylist-brain/
 ├── backend/
-│   ├── main.py              # FastAPI app entry point
-│   ├── intake/              # Image upload & preprocessing
-│   ├── imaging/             # YOLOv8, CLIP, MobileSAM pipelines
-│   ├── styling/             # Recommendation engine
-│   ├── context/             # Weather + calendar integration
-│   ├── db/                  # ChromaDB vector store
-│   └── check.py             # Health check utilities
+│   ├── main.py              # FastAPI entry — lifespan, routers, static mounts
+│   ├── check.py             # Pre-flight health checks
+│   ├── intake/              # ── CV PIPELINE ──
+│   │   ├── routes.py        # /intake/* API endpoints
+│   │   ├── pipeline.py      # Orchestrates the full intake flow
+│   │   ├── detect.py        # YOLOv8n garment detection
+│   │   ├── segment.py       # MobileSAM segmentation masks
+│   │   ├── sam_refine.py    # SAM mask post-processing
+│   │   ├── embed.py         # CLIP ViT-B/32 embedding generation
+│   │   ├── tag.py           # Garment attribute tagging
+│   │   ├── video.py         # Video frame extraction for closet scanning
+│   │   └── test_intake.py   # Intake pipeline tests
+│   ├── imaging/             # ── VISUALIZATION ──
+│   │   ├── generate.py      # Outfit image composition
+│   │   └── flatlay.py       # Flat-lay style arrangement generator
+│   ├── styling/             # ── RECOMMENDATION ENGINE ──
+│   │   ├── routes.py        # /styling/* API endpoints
+│   │   ├── llm.py           # Ollama/Llama3 integration for outfit reasoning
+│   │   ├── query.py         # ChromaDB vector similarity queries
+│   │   ├── gap.py           # Wardrobe gap analysis ("you need formal shoes")
+│   │   └── habits.py        # Wearing pattern tracking
+│   ├── context/             # ── ENVIRONMENTAL AWARENESS ──
+│   │   ├── routes.py        # /context/* API endpoints
+│   │   ├── weather.py       # OpenWeatherMap integration
+│   │   └── calendar.py      # Google Calendar event parsing
+│   └── db/                  # ── DATA LAYER ──
+│       ├── sqlite.py        # Structured garment metadata
+│       └── chroma.py        # CLIP vector embeddings store
 ├── frontend/
-│   └── index.html           # Lightweight demo interface
-├── yolov8n.pt               # YOLOv8 nano pre-trained weights
-├── requirements.txt         # Python dependencies
-├── run.sh                   # Quick-start script
-├── setup.sh                 # Environment setup script
+│   └── index.html           # Lightweight web UI
+├── download_models.sh       # Fetches YOLO + MobileSAM weights
+├── setup.sh                 # Environment + dependency setup
+├── run.sh                   # One-command server launch
+├── docker-compose.yml       # Container orchestration
+├── Dockerfile               # Production image
+├── requirements.txt         # Pinned Python dependencies
 ├── .env.example             # Environment variable template
+├── CONTRIBUTING.md          # Contribution guidelines
 └── LICENSE                  # MIT License
 ```
 
 ---
 
-## 📸 Screenshots / Demo
+## 📊 Tech Stack
 
-> Demo screenshots and video walkthrough coming soon!
+| Layer | Technology | Role |
+|---|---|---|
+| **API** | FastAPI + Uvicorn | Async REST server with auto-generated OpenAPI docs |
+| **Detection** | YOLOv8 nano | Garment bounding box detection |
+| **Segmentation** | MobileSAM | Pixel-precise garment mask extraction |
+| **Embeddings** | CLIP ViT-B/32 | Semantic style vector generation |
+| **Background** | rembg (U2Net) | Clean garment isolation from photos |
+| **Colors** | K-means (scikit-learn) | Dominant color palette extraction |
+| **Vector DB** | ChromaDB | Style similarity search at scale |
+| **Metadata DB** | SQLite | Garment attributes, history, and wear tracking |
+| **LLM** | Ollama (Llama3:8b) | Natural language outfit reasoning |
+| **Weather** | OpenWeatherMap API | Temperature-aware outfit suggestions |
+| **Calendar** | Google Calendar API | Event-appropriate styling |
 
 ---
 
-## 📈 Impact / Learning / Highlights
+## 📡 API Reference
 
-- 🧠 **Multi-Model Pipeline** — Orchestrates 4+ AI models (YOLO, CLIP, SAM, U2Net) in a single inference pipeline
-- ⚡ **Optimized for CPU** — Uses nano/lightweight model variants (YOLOv8n, ViT-B/32, MobileSAM) for MacBook Air compatibility
-- 🎯 **Production Architecture** — Clean separation of concerns with modular backend (intake → imaging → context → styling)
-- 🔬 **Advanced CV Techniques** — Combines object detection, semantic segmentation, and embedding-based similarity search
-- 📊 **Vector Database Integration** — ChromaDB for efficient style similarity retrieval at scale
+The server exposes auto-generated Swagger docs at [`/docs`](http://localhost:8000/docs).
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/intake/upload` | Upload garment image for analysis |
+| `POST` | `/intake/video` | Upload closet scan video |
+| `GET` | `/intake/wardrobe` | List all wardrobe items |
+| `POST` | `/styling/outfit` | Generate outfit recommendation |
+| `GET` | `/styling/history` | View past outfit suggestions |
+| `GET` | `/styling/gaps` | Analyze wardrobe gaps |
+| `GET` | `/context/weather` | Current weather conditions |
+| `GET` | `/health` | Service health check |
+
+---
+
+## 📈 Impact & Highlights
+
+- **Multi-Model Orchestration** — Chains 5 AI models (YOLO → SAM → CLIP → U2Net → Llama3) in a single inference pipeline
+- **CPU Optimized** — Uses nano/lightweight variants (YOLOv8n, ViT-B/32, MobileSAM) for MacBook Air–grade hardware
+- **Production Architecture** — Clean separation: intake → imaging → context → styling, each with independent routes
+- **Dual Database** — SQLite for structured metadata + ChromaDB for vector similarity — each storage engine plays to its strength
+- **Advanced CV** — Combines object detection, semantic segmentation, embedding search, and color clustering
+- **Video Intake** — Frame extraction from closet walkthrough videos for bulk wardrobe scanning
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! To contribute:
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-1. Fork this repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit your changes: `git commit -m 'Add: new feature'`
-4. Push to the branch: `git push origin feature/your-feature`
-5. Open a Pull Request
+```bash
+git checkout -b feature/your-feature
+git commit -m 'Add: new feature'
+git push origin feature/your-feature
+# → Open a Pull Request
+```
 
 ---
 
 ## 📜 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE) for details.
 
----
-
-<p align="center">
-  <b>Built with ❤️ by <a href="https://github.com/Vaishnavi-Dubey">Vaishnavi Dubey</a></b>
-</p>
+Built with ❤️ by [Vaishnavi Dubey](https://github.com/Vaishnavi-Dubey)
